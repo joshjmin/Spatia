@@ -1,0 +1,528 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  main.ui — GTK 3 UI definition for Spatia
+
+  Layout (OuterGrid, 3 rows x 2 columns):
+    Row 0:  SearchBox — "Find Intersection:" label + two street entries + Find button
+            (spans both columns)
+    Row 1, Col 0:  MapOverlay — GtkDrawingArea "MainCanvas" with floating overlays:
+                     - ProceedButton (small green, bottom-right)
+                     - ChatPanel     (AI chat, bottom-left, hidden by default)
+    Row 1, Col 1:  InnerGrid  — D-pad navigation + Zoom In/Out/Fit buttons
+                     Programmatic buttons (Night Mode, POIs, Subway, Load Map,
+                     Weather) are added at runtime via create_button()
+    Row 2:  StatusBar (spans both columns)
+
+  Styling is handled by style.css (loaded in m2.cpp).
+  EZGL expects widgets named: MainCanvas, ProceedButton, ZoomInButton,
+  ZoomOutButton, ZoomFitButton, UpButton, DownButton, LeftButton, RightButton.
+-->
+<interface>
+  <requires lib="gtk+" version="3.20"/>
+
+  <!-- 1200x800 main window -->
+  <object class="GtkWindow" id="MainWindow">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="title">Spatia</property>
+    <property name="default_width">1200</property>
+    <property name="default_height">800</property>
+    <child>
+
+      <!-- Outer layout — 3 rows:
+              row 0: search bar (full width)
+              row 1: map (left) + nav buttons (right)
+              row 2: status bar (full width)            -->
+      <object class="GtkGrid" id="OuterGrid">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="name">OuterGrid</property>
+
+        <!-- ── ROW 0: Search bar ── -->
+        <child>
+          <!-- "Find Intersection:" | Street 1 | Street 2 | Find button -->
+          <object class="GtkBox" id="SearchBox">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="name">SearchBox</property>
+            <property name="spacing">6</property>
+            <property name="margin_start">8</property>
+            <property name="margin_end">8</property>
+            <property name="margin_top">6</property>
+            <property name="margin_bottom">4</property>
+
+            <!-- Label -->
+            <child>
+              <object class="GtkLabel" id="SearchLabel">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="name">SearchLabel</property>
+                <property name="label">Find Intersection:</property>
+                <property name="xalign">0</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">False</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+
+            <!-- First street input -->
+            <child>
+              <object class="GtkEntry" id="SearchEntry1">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="name">SearchEntry1</property>
+                <property name="placeholder_text">Street 1</property>
+                <property name="hexpand">True</property>
+                <property name="tooltip_text">Enter the first street name</property>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+
+            <!-- Second street input -->
+            <child>
+              <object class="GtkEntry" id="SearchEntry2">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="name">SearchEntry2</property>
+                <property name="placeholder_text">Street 2</property>
+                <property name="hexpand">True</property>
+                <property name="tooltip_text">Enter the second street name</property>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">2</property>
+              </packing>
+            </child>
+
+            <!-- Search button -->
+            <child>
+              <object class="GtkButton" id="FindButton">
+                <property name="label">⌕  Find</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="name">FindButton</property>
+                <property name="tooltip_text">Find the intersection of the two streets</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">3</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="left_attach">0</property>
+            <property name="top_attach">0</property>
+            <property name="width">2</property>
+          </packing>
+        </child>
+
+        <!-- ── ROW 1, COL 0: Map + chat panel ── -->
+        <child>
+          <!-- Chat panel floats over the map in the bottom-left corner -->
+          <object class="GtkOverlay" id="MapOverlay">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+
+            <!-- The map itself — drawing happens here -->
+            <child>
+              <object class="GtkDrawingArea" id="MainCanvas">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="name">MainCanvas</property>
+                <property name="hexpand">True</property>
+                <property name="vexpand">True</property>
+              </object>
+            </child>
+
+            <!-- Small green Proceed button — bottom-right corner of map -->
+            <child type="overlay">
+              <object class="GtkButton" id="ProceedButton">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="name">ProceedButton</property>
+                <property name="label">Proceed</property>
+                <property name="tooltip_text">Proceed</property>
+                <property name="halign">end</property>
+                <property name="valign">end</property>
+                <property name="margin_end">10</property>
+                <property name="margin_bottom">45</property>
+              </object>
+            </child>
+
+            <!-- Directions panel — hidden by default, shown after pathfinding -->
+            <child type="overlay">
+              <object class="GtkBox" id="DirectionsPanel">
+                <property name="visible">False</property>
+                <property name="can_focus">False</property>
+                <property name="name">DirectionsPanel</property>
+                <property name="orientation">vertical</property>
+                <property name="halign">end</property>
+                <property name="valign">start</property>
+                <property name="width_request">420</property>
+                <property name="spacing">4</property>
+                <property name="margin_end">12</property>
+                <property name="margin_top">12</property>
+
+                <!-- Title label -->
+                <child>
+                  <object class="GtkLabel" id="DirectionsTitle">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="name">DirectionsTitle</property>
+                    <property name="label">Directions</property>
+                    <property name="xalign">0</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+
+                <!-- Scrollable directions text -->
+                <child>
+                  <object class="GtkScrolledWindow" id="DirectionsScroll">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="name">DirectionsScroll</property>
+                    <property name="min_content_height">150</property>
+                    <property name="max_content_height">450</property>
+                    <property name="shadow_type">in</property>
+                    <child>
+                      <object class="GtkTextView" id="DirectionsText">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="name">DirectionsText</property>
+                        <property name="editable">False</property>
+                        <property name="cursor_visible">False</property>
+                        <property name="wrap_mode">word-char</property>
+                        <property name="left_margin">12</property>
+                        <property name="right_margin">12</property>
+                        <property name="top_margin">8</property>
+                        <property name="bottom_margin">8</property>
+                      </object>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
+
+                <!-- Walk parameters row -->
+                <child>
+                  <object class="GtkBox" id="WalkParamsBox">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="name">WalkParamsBox</property>
+                    <property name="orientation">horizontal</property>
+                    <property name="spacing">4</property>
+
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="name">WalkSpeedLabel</property>
+                        <property name="label">Speed (metres/sec):</property>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkEntry" id="WalkSpeedEntry">
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="name">WalkSpeedEntry</property>
+                        <property name="text">1.4</property>
+                        <property name="width_chars">5</property>
+                        <property name="tooltip_text">Walking speed in meters per second</property>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="position">1</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="name">WalkLimitLabel</property>
+                        <property name="label">Time Limit (seconds):</property>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="position">2</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkEntry" id="WalkLimitEntry">
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="name">WalkLimitEntry</property>
+                        <property name="text">300</property>
+                        <property name="width_chars">5</property>
+                        <property name="tooltip_text">Maximum walking time in seconds</property>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="position">3</property>
+                      </packing>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">2</property>
+                  </packing>
+                </child>
+              </object>
+            </child>
+
+            <!-- Chat panel — hidden by default, shown when chat is opened -->
+            <child type="overlay">
+              <object class="GtkBox" id="ChatPanel">
+                <property name="visible">False</property>
+                <property name="can_focus">False</property>
+                <property name="name">ChatPanel</property>
+                <property name="orientation">vertical</property>
+                <property name="halign">start</property>
+                <property name="valign">end</property>
+                <property name="width_request">380</property>
+                <property name="spacing">4</property>
+                <property name="margin_start">12</property>
+                <property name="margin_bottom">40</property>
+
+                <!-- Chat history — read only, scrollable -->
+                <child>
+                  <object class="GtkScrolledWindow" id="ChatScroll">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="name">ChatScroll</property>
+                    <property name="min_content_height">120</property>
+                    <property name="max_content_height">200</property>
+                    <property name="shadow_type">in</property>
+                    <child>
+                      <object class="GtkTextView" id="ChatHistory">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="name">ChatHistory</property>
+                        <property name="editable">False</property>
+                        <property name="cursor_visible">False</property>
+                        <property name="wrap_mode">word-char</property>
+                        <property name="left_margin">8</property>
+                        <property name="right_margin">8</property>
+                        <property name="top_margin">4</property>
+                        <property name="bottom_margin">4</property>
+                      </object>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+
+                <!-- Text input + send button -->
+                <child>
+                  <object class="GtkBox" id="ChatInputBox">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="name">ChatInputBox</property>
+                    <property name="orientation">horizontal</property>
+                    <property name="spacing">6</property>
+
+                    <child>
+                      <object class="GtkEntry" id="ChatEntry">
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="name">ChatEntry</property>
+                        <property name="placeholder_text">Ask about the map...</property>
+                        <property name="hexpand">True</property>
+                      </object>
+                      <packing>
+                        <property name="expand">True</property>
+                        <property name="fill">True</property>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+
+                    <child>
+                      <object class="GtkButton" id="ChatSendButton">
+                        <property name="label">Send</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="name">ChatSendButton</property>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">1</property>
+                      </packing>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="left_attach">0</property>
+            <property name="top_attach">1</property>
+          </packing>
+        </child>
+
+        <!-- ── ROW 1, COL 1: Nav + zoom buttons ── -->
+        <child>
+          <object class="GtkGrid" id="InnerGrid">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="name">InnerGrid</property>
+            <property name="row_spacing">5</property>
+            <property name="column_spacing">5</property>
+            <property name="column_homogeneous">True</property>
+            <property name="margin_start">6</property>
+            <property name="margin_end">6</property>
+            <property name="margin_top">6</property>
+            <property name="margin_bottom">6</property>
+
+            <child>
+              <object class="GtkButton" id="UpButton">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="name">UpButton</property>
+                <property name="label">&#x25B2;</property>
+                <property name="tooltip_text">Pan map up</property>
+              </object>
+              <packing>
+                <property name="left_attach">1</property>
+                <property name="top_attach">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="LeftButton">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="name">LeftButton</property>
+                <property name="label">&#x25C0;</property>
+                <property name="tooltip_text">Pan map left</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="RightButton">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="name">RightButton</property>
+                <property name="label">&#x25B6;</property>
+                <property name="tooltip_text">Pan map right</property>
+              </object>
+              <packing>
+                <property name="left_attach">2</property>
+                <property name="top_attach">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="DownButton">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="name">DownButton</property>
+                <property name="label">&#x25BC;</property>
+                <property name="tooltip_text">Pan map down</property>
+              </object>
+              <packing>
+                <property name="left_attach">1</property>
+                <property name="top_attach">2</property>
+              </packing>
+            </child>
+
+            <!-- Zoom buttons — each spans all 3 cols -->
+            <child>
+              <object class="GtkButton" id="ZoomInButton">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="name">ZoomInButton</property>
+                <property name="label">+ Zoom In</property>
+                <property name="tooltip_text">Zoom in (scroll up)</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">3</property>
+                <property name="width">3</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="ZoomOutButton">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="name">ZoomOutButton</property>
+                <property name="label">− Zoom Out</property>
+                <property name="tooltip_text">Zoom out (scroll down)</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">4</property>
+                <property name="width">3</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="ZoomFitButton">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="name">ZoomFitButton</property>
+                <property name="label">⊡  Zoom Fit</property>
+                <property name="tooltip_text">Zoom to fit the entire map</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">5</property>
+                <property name="width">3</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="left_attach">1</property>
+            <property name="top_attach">1</property>
+          </packing>
+        </child>
+
+        <!-- ── ROW 2: Status bar ── -->
+        <child>
+          <object class="GtkStatusbar" id="StatusBar">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="name">StatusBar</property>
+          </object>
+          <packing>
+            <property name="left_attach">0</property>
+            <property name="top_attach">2</property>
+            <property name="width">2</property>
+          </packing>
+        </child>
+
+      </object>
+    </child>
+  </object>
+</interface>

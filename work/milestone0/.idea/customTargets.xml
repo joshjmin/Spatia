@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CLionExternalBuildManager">
+    <target id="bc6e203f-bd18-4a1b-81fe-6933aa561c29" name="release" defaultType="MAKE">
+      <configuration id="8bf4b294-4a74-43b3-9c5c-00a4c7c1a962" name="release">
+        <build type="MAKE">
+          <make targetName="CONF=release" />
+        </build>
+        <clean type="MAKE">
+          <make targetName="clean" />
+        </clean>
+      </configuration>
+    </target>
+    <target id="031280e2-ecb6-4608-a226-1b61bda74db5" name="debug" defaultType="MAKE">
+      <configuration id="a786f507-5f1c-42ff-9030-be5b2280c6af" name="debug">
+        <build type="MAKE">
+          <make targetName="CONF=debug" />
+        </build>
+        <clean type="MAKE">
+          <make targetName="clean" />
+        </clean>
+      </configuration>
+    </target>
+    <target id="33e54785-8352-411d-ae21-055471645742" name="debug_check" defaultType="MAKE">
+      <configuration id="5dae1331-1290-4e40-8e16-3a15af85f433" name="debug_check">
+        <build type="MAKE">
+          <make targetName="CONF=debug_check" />
+        </build>
+        <clean type="MAKE">
+          <make targetName="clean" />
+        </clean>
+      </configuration>
+    </target>
+    <target id="4428a1be-fa6b-4026-b081-19955589b737" name="clean" defaultType="MAKE">
+      <configuration id="0c1f127f-5d99-414c-aced-b90d0d0ca995" name="clean">
+        <build type="MAKE">
+          <make targetName="clean" />
+        </build>
+      </configuration>
+    </target>
+  </component>
+</project>
